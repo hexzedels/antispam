@@ -1,0 +1,11 @@
+.export-marker
+.venv/
+__pycache__/
+.pytest_cache/
+data/raw/
+data/processed/
+logs/
+models/xlmr/
+models/xlmr_folds/
+models/category/e5/
+service/space/out/
