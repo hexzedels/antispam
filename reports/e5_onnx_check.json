@@ -1,0 +1,6 @@
+{
+  "onnx_int8_mb": 112.6,
+  "n_texts": 300,
+  "cosine_mean": 0.9849,
+  "cosine_min": 0.9738
+}
