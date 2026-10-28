@@ -1,0 +1,11 @@
+{
+  "threads": 2,
+  "n_batch1": 100,
+  "linsvc_batch1_ms": 2.12,
+  "linsvc_batch1600_ms_per_email": 0.81,
+  "category_batch1_ms": 30.8,
+  "xlmr_batch1_ms": 166.95,
+  "xlmr_weights_mb": 1076.99,
+  "linsvc_artifact_mb": 6.06,
+  "category_artifacts_mb": 141.98
+}
