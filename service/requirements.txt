@@ -1,0 +1,12 @@
+# Runtime deps of the service. ML versions must match the ones the model was trained with
+# (see ../requirements.txt), otherwise the pickled sklearn pipeline may not load.
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.14.1
+joblib==1.6.0
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+# Category model: e5-small encoder as int8 ONNX.
+onnxruntime==1.31.1
+tokenizers==0.23.3

@@ -1,0 +1,17 @@
+# Whitelist: the build context is the project root, but the image only needs code and models.
+# A new model artifact has to be added here explicitly.
+*
+!service/
+!src/
+!models/final_classic.joblib
+!models/category/
+
+src/data/
+service/.venv/
+service/tests/
+service/space/
+service/pytest.ini
+service/requirements-dev.txt
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Антиспам: демо</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#667085; --border:#d0d5dd;
+          --accent:#2f5bea; --spam:#d92d20; --ham:#079455; --warn:#b54708; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:32px 16px; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px; }
+  textarea { width:100%; min-height:200px; padding:12px; font:inherit; font-size:15px;
+             border:1px solid var(--border); border-radius:8px; resize:vertical; }
+  textarea:focus { outline:2px solid var(--accent); border-color:transparent; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; }
+  button { font:inherit; padding:9px 16px; border-radius:8px; border:1px solid var(--accent);
+           background:var(--accent); color:#fff; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--accent); }
+  button.small { padding:4px 10px; font-size:14px; border-color:var(--border); color:var(--text); background:#fff; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .hint { color:var(--muted); font-size:14px; }
+  #out { margin-top:16px; display:none; }
+  .verdict { font-size:22px; font-weight:600; }
+  .verdict.spam { color:var(--spam); } .verdict.ham { color:var(--ham); } .verdict.err { color:var(--warn); font-size:17px; }
+  .bar { position:relative; height:12px; background:#eaecf0; border-radius:6px; margin:10px 0 4px; overflow:hidden; }
+  .bar > i { position:absolute; inset:0 auto 0 0; background:var(--accent); }
+  .bar > b { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--text); }
+  table { border-collapse:collapse; margin-top:8px; }
+  td { padding:2px 12px 2px 0; }
+  footer { margin-top:20px; font-size:14px; color:var(--muted); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Антиспам-фильтр</h1>
+  <p class="sub">Вставьте текст письма (тему и тело) и проверьте его моделью.</p>
+  <div class="card">
+    <textarea id="text" placeholder="Текст письма..."></textarea>
+    <div class="row">
+      <span class="hint">Примеры:</span>
+      <button class="small" data-ex="spam">спам</button>
+      <button class="small" data-ex="ham">обычное письмо</button>
+      <button class="small" data-ex="ru">спам на русском</button>
+    </div>
+    <div class="row">
+      <button id="btn-spam">Проверить на спам</button>
+      <button id="btn-cat" class="ghost">Определить категорию</button>
+      <span id="len" class="hint"></span>
+    </div>
+    <div id="out"></div>
+  </div>
+  <footer>API: <a href="/docs">/docs</a> &middot; <a href="/health">/health</a></footer>
+</main>
+<script>
+const EX = {
+  spam: "Congratulations! You have been selected to receive a FREE $1000 Walmart gift card. Click here to claim your prize now: http://bit.ly/claim-prize Offer expires in 24 hours!",
+  ham: "Hi Anna,\n\nthanks for sending the slides. I looked through them, the section about evaluation looks good. Can we move our call to Thursday at 3 pm?\n\nBest,\nIvan",
+  ru: "Поздравляем! Вы выиграли 500 000 рублей. Чтобы получить выигрыш, перейдите по ссылке и оплатите комиссию 990 рублей. Предложение действует только сегодня!"
+};
+const $ = (id) => document.getElementById(id);
+const out = $("out"), text = $("text");
+const pct = (x) => (x * 100).toFixed(1) + "%";
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+document.querySelectorAll("[data-ex]").forEach((b) =>
+  b.addEventListener("click", () => { text.value = EX[b.dataset.ex]; updLen(); }));
+const updLen = () => { $("len").textContent = text.value.length ? text.value.length + " симв." : ""; };
+text.addEventListener("input", updLen);
+
+function show(html) { out.innerHTML = html; out.style.display = "block"; }
+
+async function call(path) {
+  const r = await fetch(path, { method: "POST", headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({ text: text.value }) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    let msg = data.detail;
+    if (Array.isArray(msg)) msg = msg.map((d) => d.msg).join("; ");
+    if (r.status === 503) msg = "Модель категорий пока не загружена.";
+    if (r.status === 422) msg = "Некорректный ввод: " + (msg || "проверьте текст");
+    throw new Error(msg || ("Ошибка " + r.status));
+  }
+  return data;
+}
+
+async function run(btn, path, render) {
+  if (!text.value.trim()) { show('<div class="verdict err">Введите текст письма.</div>'); return; }
+  btn.disabled = true;
+  try { show(render(await call(path))); }
+  catch (e) { show('<div class="verdict err">' + esc(e.message) + '</div>'); }
+  finally { btn.disabled = false; }
+}
+
+$("btn-spam").addEventListener("click", (e) => run(e.target, "/predict", (d) => `
+  <div class="verdict ${d.is_spam ? "spam" : "ham"}">${d.is_spam ? "Спам" : "Не спам"}</div>
+  <div class="bar"><i style="width:${pct(d.proba)}"></i><b style="left:${pct(d.threshold)}"></b></div>
+  <div class="hint">Вероятность спама: <b>${pct(d.proba)}</b>, порог ${pct(d.threshold)}
+  (порог завышен, чтобы реже отправлять нормальные письма в спам)</div>`));
+
+$("btn-cat").addEventListener("click", (e) => run(e.target, "/category", (d) => {
+  const rows = Object.entries(d.scores).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${pct(v)}</td></tr>`).join("");
+  return `<div class="verdict">Категория: ${esc(d.category)}</div><table>${rows}</table>`;
+}));
+</script>
+</body>
+</html>
