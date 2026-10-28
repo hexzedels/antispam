@@ -1,0 +1,18 @@
+{
+  "model": "linsvc",
+  "rule": "max OOF recall at precision >= 0.99 and FPR <= 0.5%, weighed against size and CPU latency; the course test set is not used for the choice",
+  "oof_recall_at_constraint": {
+    "linsvc": 0.9638,
+    "xlmr": 0.9693
+  },
+  "extra_spam_caught_oof": 84,
+  "latency_ms_cpu_batch1": {
+    "linsvc": 2.12,
+    "xlmr": 166.95
+  },
+  "size_mb": {
+    "linsvc": 6.1,
+    "xlmr": 1077
+  },
+  "reason_ru": "При FPR не выше 0,5% на OOF XLM-R ловит на 84 письма спама больше (Recall 0,9693 против 0,9638), ROC-AUC тот же, 0,9987. Но весит 1,08 ГБ вместо 6 МБ и тратит 167 мс на письмо на CPU против 2 мс. Для бесплатного CPU взяли LinearSVC."
+}
